@@ -5,6 +5,8 @@ export default function Auth({ onAuthed }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
+  const [course, setCourse] = useState('')
+  const [semester, setSemester] = useState(1)
   const [phone, setPhone] = useState('')
   const [otp, setOtp] = useState('')
   const [step, setStep] = useState('choice')
@@ -15,7 +17,7 @@ export default function Auth({ onAuthed }) {
     setLoading(true)
     try {
       if (mode === 'register') {
-        const res = await fetch(`${api}/auth/register-email`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email, password, phone }) })
+        const res = await fetch(`${api}/auth/register-email`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email, password, phone, course, semester: Number(semester) }) })
         const data = await res.json()
         if (!res.ok) throw new Error(data.detail || 'Failed')
         onAuthed(data)
@@ -39,14 +41,16 @@ export default function Auth({ onAuthed }) {
       const data = await res.json()
       if (!res.ok) throw new Error(data.detail || 'Failed')
       setStep('verify')
-      if (data.dev_code) alert(`Dev OTP: ${data.dev_code}`)
+      if (data.dev_code) {
+        console.log('Dev OTP:', data.dev_code)
+      }
     } catch (e) { alert(e.message) } finally { setLoading(false) }
   }
 
   const verifyOtp = async () => {
     setLoading(true)
     try {
-      const res = await fetch(`${api}/auth/verify-otp`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone, code: otp, name, email, password }) })
+      const res = await fetch(`${api}/auth/verify-otp`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone, code: otp, name, email, password, course, semester: Number(semester) }) })
       const data = await res.json()
       if (!res.ok) throw new Error(data.detail || 'Failed')
       onAuthed(data)
@@ -67,10 +71,22 @@ export default function Auth({ onAuthed }) {
             <input value={email} onChange={e=>setEmail(e.target.value)} className="w-full border rounded px-3 py-2" placeholder="you@college.edu" />
           </div>
           {mode==='register' && (
-            <div>
-              <label className="block text-sm font-medium">Name</label>
-              <input value={name} onChange={e=>setName(e.target.value)} className="w-full border rounded px-3 py-2" placeholder="Full name" />
-            </div>
+            <>
+              <div>
+                <label className="block text-sm font-medium">Full Name</label>
+                <input value={name} onChange={e=>setName(e.target.value)} className="w-full border rounded px-3 py-2" placeholder="Full name" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium">Course</label>
+                <input value={course} onChange={e=>setCourse(e.target.value)} className="w-full border rounded px-3 py-2" placeholder="B.Tech CSE" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium">Semester</label>
+                <select value={semester} onChange={e=>setSemester(e.target.value)} className="w-full border rounded px-3 py-2">
+                  {Array.from({length:8}).map((_,i)=> <option key={i+1} value={i+1}>{i+1}</option>)}
+                </select>
+              </div>
+            </>
           )}
           <div>
             <label className="block text-sm font-medium">Password</label>
@@ -92,6 +108,15 @@ export default function Auth({ onAuthed }) {
         <div className="space-y-4">
           <p className="text-sm text-slate-600">OTP sent to {phone}. Enter it below.</p>
           <input value={otp} onChange={e=>setOtp(e.target.value)} className="w-full border rounded px-3 py-2 tracking-widest text-center" placeholder="000000" />
+          {mode==='register' && (
+            <>
+              <input value={name} onChange={e=>setName(e.target.value)} className="w-full border rounded px-3 py-2" placeholder="Full name" />
+              <input value={course} onChange={e=>setCourse(e.target.value)} className="w-full border rounded px-3 py-2" placeholder="Course" />
+              <select value={semester} onChange={e=>setSemester(e.target.value)} className="w-full border rounded px-3 py-2">
+                {Array.from({length:8}).map((_,i)=> <option key={i+1} value={i+1}>{i+1}</option>)}
+              </select>
+            </>
+          )}
           <button disabled={loading} onClick={verifyOtp} className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded py-2">Verify & Continue</button>
           <button onClick={()=>setStep('choice')} className="w-full text-slate-500 text-sm">Back</button>
         </div>
